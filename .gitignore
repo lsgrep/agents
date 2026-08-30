@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
+.ruff_cache/
+
+# Lab outputs — these are per-run, not source
+runs/
+traces/
+*.log
+*.jsonl
+outputs/

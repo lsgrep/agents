@@ -1,0 +1,21 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      # The whole point of keeping the loop, the arithmetic and the simulator
+      # free of any provider SDK: this suite runs offline, on a CPU runner,
+      # in seconds. No API key, no network, no spend.
+      - run: ruff check agentlab tests
+      - run: pytest -q

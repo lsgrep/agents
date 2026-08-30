@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentlab"
+version = "0.1.0"
+description = "Lab kit for building LLM agents: the loop from scratch, context economics, reliability math, evals, and the failure modes."
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+# The notebooks install what they need in cell 1; these extras exist so a
+# box can be provisioned in one shot.
+plot  = ["matplotlib>=3.7", "pandas>=2.0", "numpy>=1.24"]
+live  = ["anthropic>=0.40"]
+dev   = ["pytest>=7", "ruff>=0.6", "numpy>=1.24"]
+
+[tool.setuptools.packages.find]
+include = ["agentlab*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
