@@ -76,6 +76,21 @@ def infer_capabilities(tool) -> set:
     return found
 
 
+def _named(*groups, limit: int = 3) -> tuple:
+    """Names from several capability groups, deduped and order-preserving.
+
+    A tool can carry more than one capability — a `read_ticket` that returns
+    customer messages is both private data and untrusted input — so the naive
+    concatenation lists it twice and the finding reads like a bug.
+    """
+    out: list = []
+    for group in groups:
+        for name in group[:limit]:
+            if name not in out:
+                out.append(name)
+    return tuple(out)
+
+
 @dataclass(frozen=True)
 class Risk:
     kind: str
@@ -135,7 +150,7 @@ def analyze(tools: Sequence) -> Analysis:
                 "critical",
                 "this agent can read private data, ingest untrusted content, and send data "
                 "outward. Anyone who can write text it will read can exfiltrate through it.",
-                tuple(by_cap[PRIVATE][:3] + by_cap[UNTRUSTED][:3] + by_cap[EXFIL][:3]),
+                _named(by_cap[PRIVATE], by_cap[UNTRUSTED], by_cap[EXFIL]),
                 "break one leg: split into two agents that do not share a transcript, put the "
                 "outbound call behind human confirmation, or allow-list its destinations.",
             )
@@ -148,7 +163,7 @@ def analyze(tools: Sequence) -> Analysis:
                 "medium",
                 f"two legs of the trifecta present; only {missing} is missing. "
                 "One convenience tool away from critical — say so in the review.",
-                tuple(n for c in (PRIVATE, UNTRUSTED, EXFIL) for n in by_cap[c][:2]),
+                _named(*(by_cap[c] for c in (PRIVATE, UNTRUSTED, EXFIL)), limit=2),
                 f"write down that adding any {missing} tool to this agent needs a security review.",
             )
         )
@@ -159,7 +174,7 @@ def analyze(tools: Sequence) -> Analysis:
                 "untrusted_to_destructive",
                 "high",
                 "untrusted content can reach a hard-to-reverse action in the same run.",
-                tuple(by_cap[UNTRUSTED][:2] + by_cap[DESTRUCTIVE][:2]),
+                _named(by_cap[UNTRUSTED], by_cap[DESTRUCTIVE], limit=2),
                 "gate every destructive tool behind confirmation, and make the confirmation "
                 "show the arguments — not just the tool name.",
             )

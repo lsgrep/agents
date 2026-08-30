@@ -133,3 +133,12 @@ def test_bad_caps_are_rejected_rather_than_producing_a_plausible_number():
         bg.bounded_run_cost(shape(), cap=100)
     with pytest.raises(ValueError):
         bg.bounded_run_cost(shape(), cap=50_000, keep_ratio=1.5)
+
+
+def test_a_shape_can_be_projected_to_another_run_length():
+    fitted = shape(turns=12)
+    longer = fitted.at_turns(100)
+    assert longer.turns == 100
+    assert longer.fixed_prefix == fitted.fixed_prefix
+    # And because cost is quadratic, 8x the turns is far more than 8x the cost.
+    assert bg.loop_input_tokens(longer) > 8 * bg.loop_input_tokens(fitted) * 3

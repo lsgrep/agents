@@ -190,7 +190,15 @@ class ScriptedModel:
     def __call__(self, system, messages, tools) -> ModelResponse:
         self.calls.append({"system": system, "messages": list(messages), "tools": tools})
         if not self.responses:
-            return ModelResponse([text_block("(scripted model ran out of responses)")], "end_turn")
+            # Deliberately loud. A scripted model running dry means the harness
+            # went further than the script expected, which is exactly the thing
+            # you wanted to find out. Returning a plausible "end_turn" here
+            # would hide it, and a silently-shortened run looks like a passing
+            # test.
+            raise ScriptExhausted(
+                f"scripted model ran out after {len(self.calls)} calls — the loop asked for "
+                "more turns than were scripted. Add responses, or lower max_steps."
+            )
         return self.responses.pop(0)
 
 
@@ -230,6 +238,10 @@ def _transcript_tokens(system, messages, tools) -> int:
 # --------------------------------------------------------------------------
 # The loop
 # --------------------------------------------------------------------------
+
+
+class ScriptExhausted(RuntimeError):
+    """A `ScriptedModel` was asked for more turns than it was given."""
 
 
 class LoopInvariantError(AssertionError):

@@ -299,7 +299,10 @@ def error(what: str, why: str = "", do_next: str = "", valid: Sequence[str] | No
 # --------------------------------------------------------------------------
 
 _NOUNS = ("order", "invoice", "ticket", "customer", "shipment", "refund", "account",
-          "subscription", "payment", "review", "inventory", "coupon")
+          "subscription", "payment", "review", "inventory", "coupon", "contract",
+          "vendor", "warehouse", "returns_case", "dispute", "credit_note", "quote",
+          "campaign", "segment", "webhook_log", "audit_entry", "tax_rate",
+          "price_list", "carrier", "batch", "sku")
 _VERBS = ("get", "list", "search", "update", "cancel", "create")
 _PHRASING = {
     "get": "Look up a single {noun} by its identifier and return its full detail.",
@@ -328,25 +331,40 @@ def _distractor_schema(verb: str, noun: str) -> dict:
     }
 
 
-def distractors(n: int, seed: int = 0) -> list:
+def distractors(n: int, seed: int = 0, collisions: bool = True) -> list:
     """Plausible-but-irrelevant tools, for measuring what surface size costs.
 
     Deliberately *realistic* rather than random: a surface degrades because its
-    tools resemble each other, so distractors that read like a real CRM API are
-    the honest test. Random noise tools are an easy test that passes.
+    tools resemble each other, so distractors that read like a real back-office
+    API are the honest test. Random noise tools are an easy test that passes.
+
+    Because it is realistic, a large generated surface grows collisions on its
+    own — which is the finding, not a defect. Pass `collisions=False` for a
+    deliberately clean control surface, so an experiment can vary surface *size*
+    without also varying surface *quality*.
     """
     import random
 
     from .loop import Tool
 
+    if n < 0:
+        raise ValueError("n must be >= 0")
+    capacity = len(_VERBS) * len(_NOUNS) if collisions else len(_NOUNS)
+    if n > capacity:
+        # Better a clear error than a loop that spins forever looking for a
+        # unique name that cannot exist.
+        raise ValueError(
+            f"can only generate {capacity} distinct tools from this vocabulary, asked for {n}"
+        )
     rng = random.Random(seed)
-    out, used = [], set()
+    out, used, claimed_nouns = [], set(), set()
     while len(out) < n:
         verb, noun = rng.choice(_VERBS), rng.choice(_NOUNS)
         name = f"{verb}_{noun}"
-        if name in used:
+        if name in used or (not collisions and noun in claimed_nouns):
             continue
         used.add(name)
+        claimed_nouns.add(noun)
         out.append(
             Tool(
                 name=name,

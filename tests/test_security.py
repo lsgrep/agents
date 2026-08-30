@@ -118,3 +118,16 @@ def test_a_guard_that_blocks_everything_still_gets_the_architecture_warning():
     result = probe_harness(lambda text: True)
     assert result["passed_through"] == []
     assert "architecture is the control" in result["note"]
+
+
+def test_a_tool_with_two_capabilities_is_named_once_not_twice():
+    # read_ticket is both untrusted input and (arguably) private data. Listing
+    # it twice makes the finding read like a bug in the analyzer.
+    surface = [
+        Tool("read_ticket", "Read a support ticket, including the customer's messages.",
+             tainted_output=True),
+        Tool("read_customer_record", "Read the customer's private account details."),
+        Tool("post_reply", "Post a public reply on the ticket.", read_only=False),
+    ]
+    named = analyze(surface).critical[0].tools
+    assert len(named) == len(set(named))

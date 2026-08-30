@@ -156,3 +156,13 @@ def test_the_on_step_hook_can_rewrite_the_transcript_between_turns():
     ])
     run(m, ToolRegistry([adder()]), "go", on_step=hook)
     assert seen == [3]  # prompt + assistant + results
+
+
+def test_a_scripted_model_running_dry_is_loud_rather_than_a_plausible_ending():
+    # A silent "end_turn" here would make a shortened run look like a passing
+    # test, and it would hide a harness that went further than expected.
+    from agentlab.loop import ScriptExhausted
+
+    m = ScriptedModel([ModelResponse([tool_use_block("a", "add", {"a": 1, "b": 1})], "tool_use")])
+    with pytest.raises(ScriptExhausted, match="ran out after"):
+        run(m, ToolRegistry([adder()]), "go")

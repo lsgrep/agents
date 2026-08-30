@@ -152,6 +152,18 @@ class LoopShape:
         """How much longer the transcript gets each turn."""
         return self.assistant_tokens + self.result_tokens
 
+    def at_turns(self, turns: int) -> LoopShape:
+        """The same shape, projected to a different run length.
+
+        The usual question after fitting a shape to a real trace: *what does
+        this look like at three times the turns?* Because the cost is
+        quadratic, the answer is never three times.
+        """
+        return LoopShape(
+            self.system_tokens, self.tool_tokens, self.prompt_tokens,
+            self.assistant_tokens, self.result_tokens, turns,
+        )
+
 
 @dataclass(frozen=True)
 class Cost:
